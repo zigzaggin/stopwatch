@@ -38,7 +38,8 @@
         >
             <v-list-item one-line>
                 <v-list-item-content>
-                    <v-list-item-title class="headline mb-1">{{ name ? name : `Stopwatch ${index + 1}` }}
+                    <v-list-item-title class="headline mb-1">
+                        {{ n }}
                     </v-list-item-title>
                 </v-list-item-content>
                 <v-list-item-action>
@@ -69,6 +70,13 @@
                 >
                     {{ running ? 'Stop' : 'Start' }}
                 </v-btn>
+                <v-spacer></v-spacer>
+                <v-btn
+                    @click="reset"
+                    icon
+                >
+                    <v-icon>mdi-refresh</v-icon>
+                </v-btn>
             </v-card-actions>
         </v-card>
     </v-col>
@@ -91,6 +99,10 @@
             index: {
                 type: Number,
                 required: true
+            },
+            guid: {
+                type: String,
+                required: true
             }
         },
         data() {
@@ -106,6 +118,9 @@
         computed: {
             formattedStart() {
                 return format(this.startTime, "h:mm:ss a");
+            },
+            n() {
+                return this.name || `Stopwatch ${this.index + 1}`
             }
         },
         watch: {
@@ -117,12 +132,15 @@
                 }
             },
             stopTime() {
-                this.$emit('mark', {start: this.startTime, stop: this.stopTime});
+                this.$emit('mark', {start: this.startTime, stop: this.stopTime, guid: this.guid, watch: this.n, color: this.color});
             }
         },
         methods: {
             deleteStopwatch() {
                 this.$emit("rm")
+            },
+            reset() {
+                this.$emit('reset');
             }
         }
     }

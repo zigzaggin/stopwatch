@@ -23,24 +23,40 @@
                         v-for="(s, i) in stopwatches"
                         :key="s.guid"
                         :index="i"
+                        :guid="s.guid"
                         @rm="remove(s)"
-                        @mark="$event => mark(s, $event)"
+                        @mark="$event => mark($event)"
+                        @reset="reset(s)"
                     />
                 </v-row>
-                <div
-                    v-for="s in stopwatches"
-                    :key="s.guid"
+                <v-card
+                    v-if="marks.length > 0"
+                    outlined
                 >
-                    <div
-                        v-for="r in s.marks"
-                        :key="r.start"
-                    >
-                        {{ s.guid }}
-                        {{ format(r.start) }}
-                        {{ format(r.stop) }}
-                        {{ distance(r) }}
-                    </div>
-                </div>
+                    <v-simple-table>
+                        <template v-slot:default>
+                            <thead>
+                            <tr>
+                                <th>Stopwatch</th>
+                                <th>Start</th>
+                                <th>Stop</th>
+                                <th>Duration</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr
+                                v-for="(s, i) in marks"
+                                :key="i"
+                            >
+                                <td>{{ s.watch }}</td>
+                                <td>{{ format(s.start) }}</td>
+                                <td>{{ format(s.stop) }}</td>
+                                <td>{{ distance(s) }}</td>
+                            </tr>
+                            </tbody>
+                        </template>
+                    </v-simple-table>
+                </v-card>
             </v-container>
         </v-content>
     </v-app>
@@ -65,24 +81,33 @@
         },
         data() {
             return {
-                stopwatches: []
+                stopwatches: [],
+                marksRaw: []
+            }
+        },
+        computed: {
+            marks() {
+                return this.marksRaw;
             }
         },
         methods: {
             addStopwatch() {
-                this.stopwatches.push({guid: uuidv4(), marks: []});
+                this.stopwatches.push({guid: uuidv4()});
             },
             remove(s) {
                 this.stopwatches = this.stopwatches.filter(f => f.guid !== s.guid);
             },
-            mark(s, {start, stop}) {
-                s.marks.push({start, stop})
+            mark({start, stop, watch, guid, color}) {
+                this.marksRaw.push({start, stop, watch, guid, color})
             },
             format(v) {
                 return format(v, "h:mm:ss a")
             },
             distance(r) {
                 return formatDistanceStrict(r.start, r.stop);
+            },
+            reset(s) {
+                this.marksRaw = this.marksRaw.filter(f => f.guid !== s.guid)
             }
         }
     }
