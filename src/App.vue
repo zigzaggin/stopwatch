@@ -30,7 +30,7 @@
                     />
                 </v-row>
                 <v-card
-                    v-if="marks.length > 0"
+                    v-if="marksRaw.length > 0"
                     outlined
                     class="mt-2"
                 >
@@ -49,14 +49,14 @@
                             >
                                 <td><span class="sw-display" :style="{backgroundColor: s.color}">{{ s.watch }}</span>
                                 </td>
-                                <td>{{ (s.total / 60).toLocaleString() }} minutes</td>
+                                <td>{{ (s.total / 3600).toLocaleString() }} Hours</td>
                             </tr>
                             </tbody>
                         </template>
                     </v-simple-table>
                 </v-card>
                 <v-card
-                    v-if="marks.length > 0"
+                    v-if="marksRaw.length > 0"
                     outlined
                     class="mt-5"
                 >
@@ -73,14 +73,14 @@
                             </thead>
                             <tbody>
                             <tr
-                                v-for="(s, i) in marks"
+                                v-for="(s, i) in marksRaw"
                                 :key="i"
                             >
                                 <td><span class="sw-display" :style="{backgroundColor: s.color}">{{ s.watch }}</span>
                                 </td>
                                 <td>{{ format(s.start) }}</td>
                                 <td>{{ format(s.stop) }}</td>
-                                <td>{{ distance(s) }}</td>
+                                <td> {{ distance(s) }} </td>
                                 <td>
                                     <v-icon
                                         @click="em(s)"
@@ -104,10 +104,24 @@
                             <v-form>
                                 <v-row>
                                     <v-col cols="12" md="6">
-                                        <v-time-picker v-model="editingMark.start" full-width use-seconds class="mt-4"/>
+                                        <v-datetime-picker label="Start" v-model="editingMark.start" class="mt-4">
+                                            <template slot="dateIcon">
+                                                <v-icon>mdi-calendar</v-icon>
+                                            </template>
+                                            <template slot="timeIcon">
+                                                <v-icon>mdi-clock</v-icon>
+                                            </template>
+                                        </v-datetime-picker>
                                     </v-col>
                                     <v-col cols="12" md="6">
-                                        <v-time-picker v-model="editingMark.stop" full-width use-seconds class="mt-4"/>
+                                        <v-datetime-picker label="Stop" v-model="editingMark.stop" class="mt-4">
+                                            <template slot="dateIcon">
+                                                <v-icon>mdi-calendar</v-icon>
+                                            </template>
+                                            <template slot="timeIcon">
+                                                <v-icon>mdi-clock</v-icon>
+                                            </template>
+                                        </v-datetime-picker>
                                     </v-col>
                                 </v-row>
                             </v-form>
@@ -131,11 +145,12 @@
 <script>
 
     import Stopwatch from "@/components/Stopwatch";
-    import {differenceInSeconds, formatDistanceStrict} from "date-fns";
+    import {format, distanceInWordsStrict, parse, differenceInSeconds} from "date-fns";
+    import {loadMarks, loadWatches, persistWatches, saveMarks} from "@/db/db";
 
     function uuidv4() {
         return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-            var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+            var r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
             return v.toString(16);
         });
     }
@@ -154,20 +169,29 @@
             }
         },
         computed: {
-            marks() {
-                return this.marksRaw;
-            },
             totals() {
                 let result = {};
                 this.marksRaw.forEach(f => {
                     if (!result[f.guid])
                         result[f.guid] = {...f, total: 0};
 
-                    result[f.guid].total = result[f.guid].total + differenceInSeconds(new Date(f.stop), new Date(f.start));
+                    result[f.guid].total = result[f.guid].total + differenceInSeconds(parse(f.stop), parse(f.start));
                 });
 
                 return Object.keys(result).map(key => result[key]);
             }
+        },
+        watch: {
+            marksRaw() {
+                saveMarks(this.marksRaw)
+            },
+            stopwatches() {
+                persistWatches(this.stopwatches)
+            }
+        },
+        created() {
+            this.stopwatches = loadWatches();
+            this.marksRaw = loadMarks();
         },
         methods: {
             addStopwatch() {
@@ -180,10 +204,10 @@
                 this.marksRaw.push({mguid: uuidv4(), start, stop, watch, guid, color})
             },
             format(v) {
-                return v;
+                return format(parse(v), "h:mm:ss a");
             },
             distance(r) {
-                return formatDistanceStrict(r.start, r.stop);
+                return distanceInWordsStrict(r.start, r.stop);
             },
             reset(s) {
                 this.marksRaw = this.marksRaw.filter(f => f.guid !== s.guid)
@@ -193,6 +217,8 @@
             },
             em(s) {
                 this.editingMark = s;
+                this.editingMark.start = parse(this.editingMark.start);
+                this.editingMark.stop = parse(this.editingMark.stop);
                 this.editMark = true;
             },
             finalizeMarkEdit() {

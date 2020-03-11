@@ -15,7 +15,7 @@
                 <v-divider></v-divider>
                 <v-card-actions>
                     <v-btn
-                        @click="overlay = false"
+                        @click="done"
                         text
                     >
                         Done
@@ -54,7 +54,11 @@
             <v-divider></v-divider>
             <div class="color-block pa-4">
                 <span v-if="running">
-                    <v-icon color="lighten-1">mdi-timer</v-icon>
+                    <v-progress-circular
+                        indeterminate
+                        color="white"
+                        class="mr-4"
+                    ></v-progress-circular>
                     Running, started at: {{ formattedStart }}
                 </span>
                 <span v-else>
@@ -92,6 +96,7 @@
         "#03b674"
     ];
     import {format} from "date-fns"
+    import {loadConfig, saveConfig} from "@/db/db";
 
     export default {
         name: "Stopwatch",
@@ -132,7 +137,20 @@
                 }
             },
             stopTime() {
-                this.$emit('mark', {start: this.startTime, stop: this.stopTime, guid: this.guid, watch: this.n, color: this.color});
+                this.$emit('mark', {
+                    start: this.startTime,
+                    stop: this.stopTime,
+                    guid: this.guid,
+                    watch: this.n,
+                    color: this.color
+                });
+            }
+        },
+        created() {
+            let r = loadConfig(this.guid);
+            if (r.guid) {
+                this.name = r.name;
+                this.color = r.color;
             }
         },
         methods: {
@@ -141,6 +159,10 @@
             },
             reset() {
                 this.$emit('reset');
+            },
+            done() {
+                saveConfig({guid: this.guid, name: this.name, color: this.color})
+                this.overlay = false;
             }
         }
     }
