@@ -204,7 +204,7 @@
                 this.marksRaw.push({mguid: uuidv4(), start, stop, watch, guid, color})
             },
             format(v) {
-                return format(parse(v), "h:mm:ss a");
+                return format(parse(v), "M/D h:mm:ss a");
             },
             distance(r) {
                 return distanceInWordsStrict(r.start, r.stop);
@@ -234,4 +234,12 @@
         color: white;
         display: block;
     }
+
+    .v-time-picker-custom {
+      .v-picker__title {
+        height: 84px;
+        padding-top: 10px;
+      }
+    }
+
 </style>
